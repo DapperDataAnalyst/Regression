@@ -1,0 +1,247 @@
+---
+title: "Regression Homework 3"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-02-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Problem 1
+
+---
+
+#### Part (1)
+
+The null hypothesis of the Sobel test is that $\beta_{12}=\beta_{33}$.
+
+---
+
+#### Part (2)
+
+The regression of the three models is performed in R code twice for each model; once using a "manual" method utilizing formulas according to the lecture slides, and once using an "automated" method utilizing the outputs of R's built-in lm() function. For each of the three models, the outputs of both methods match exactly, providing a good gut check of the methods
+
+
+##### Model 1:
+$y_i = \beta_{11} + \beta_{12} x_i + \epsilon_i$
+```
+# This block of code uses the manual approach to find the beta vector for Model 1
+# An automated method is used afterward to check results
+col_o_ones = c()
+for (i in 1:100){
+  col_o_ones = append(col_o_ones,1)
+}
+data1 = cbind(y, col_o_ones)
+data1 = cbind(data1, x)
+model1_x = data1[,c(2:3)]
+model1_bh = solve(t(model1_x)%*%model1_x)%*%t(model1_x)%*%y
+
+# This block of code is the automated method for Model 1
+model1 = lm(y ~ x, data)
+summary(model1)
+bh_11 = summary(model1)$coefficients["(Intercept)", "Estimate"]
+bh_12 = summary(model1)$coefficients["x", "Estimate"]
+------------------------------------------------------
+```
+
+**Solution:**
+\[
+  \hat{\beta}_{1i} =
+  \left[ {\begin{array}{cc}
+    \hat{\beta}_{11} = -1.606988 \\
+    \hat{\beta}_{12} = 2.638468 \\
+  \end{array} } \right]
+\]
+
+##### Model 2:
+$m_i = \beta_{21} + \beta_{22} x_i + \epsilon_i$
+```
+# This block of code uses the manual approach to find the beta vector for Model 2
+data2 = cbind(m, col_o_ones)
+data2 = cbind(data2, x)
+model2_x = data2[,c(2:3)]
+model2_bh = solve(t(model2_x)%*%model2_x)%*%t(model2_x)%*%m
+
+# This block of code is the automated method for Model 2
+model2 = lm(m ~ x, data)
+summary(model2)
+bh_21 = summary(model2)$coefficients["(Intercept)", "Estimate"]
+bh_22 = summary(model2)$coefficients["x", "Estimate"]
+------------------------------------------------------
+```
+
+**Solution:**
+\[
+  \hat{\beta}_{2i} =
+  \left[ {\begin{array}{cc}
+    \hat{\beta}_{21} = -0.7718842 \\
+    \hat{\beta}_{22} = 2.055121 \\
+  \end{array} } \right]
+\]
+
+##### Model 3:
+```
+# This block of code uses the manual approach to find the beta vector for Model 3
+data3 = cbind(y, col_o_ones)
+data3 = cbind(data3, m)
+data3 = cbind(data3, x)
+model3_x = data3[,c(2:4)]
+model3_bh = solve(t(model3_x)%*%model3_x)%*%t(model3_x)%*%y
+
+# This block of code is the automated method for Model 3
+model3 = lm(y ~ m + x, data)
+summary(model3)
+bh_31 = summary(model3)$coefficients["(Intercept)", "Estimate"]
+bh_32 = summary(model3)$coefficients["m", "Estimate"]
+bh_33 = summary(model3)$coefficients["x", "Estimate"]
+------------------------------------------------------
+```
+
+**Solution:**
+\[
+  \hat{\beta}_{3i} =
+  \left[ {\begin{array}{cc}
+    \hat{\beta}_{31} = -0.6658783 \\
+    \hat{\beta}_{32} = 1.219237 \\
+    \hat{\beta}_{33} = 0.1327884 \\
+  \end{array} } \right]
+\]
+
+---
+
+#### Part (3)
+
+The variance of $\hat{\beta_j}$ is found as $\sigma^2 C_j$, where $C_j$ is the jth diagonal element of the matrix $(X'X)^{-1}$ for the appropriate model.
+
+To find the variance of $\hat{\beta}_{22}$, we find $(X'X)^{-1}$ for model 2 as 
+\[
+  (X'X)^{-1} =
+  \left[ {\begin{array}{cc}
+    0.03739177 & -0.005571920 \\
+    -0.00557192 & 0.001133417 \\
+  \end{array} } \right]
+\]
+
+$C_2$ is the second diagonal element of this matrix, so $C_2 = 0.001133417$. Since we are given that $\sigma^2=1$, we can find $Var(\hat{\beta}_{22})$ as $\sigma^2 C_2 = 1*0.001133417 = 0.001133417$
+
+To find the variance of $\hat{\beta}_{32}$, we find $(X'X)^{-1}$ for model 3 as
+
+\[
+  (X'X)^{-1} =
+  \left[ {\begin{array}{cc}
+    0.042399254 & 0.006487355 & -0.01890422\\
+    0.006487355 & 0.008404571 & -0.01727241\\
+    -0.018904222 & -0.017272412 & 0.03663032\\
+  \end{array} } \right]
+\]
+
+$C_2$ is the second diagonal element of this matrix, so $C_2 = 0.008404571$. Since we are given that $\sigma^2=1$, we can find $Var(\hat{\beta}_{32})$ as $\sigma^2 C_2 = 1*0.008404571 = 0.008404571$
+
+---
+
+#### Part (4)
+
+The lecture materials identify the proper z test statistic for the Sobel test as
+
+$$Z=\frac{\hat{\beta}_{12} - \hat{\beta}_{33}}{ \sqrt{\hat{\beta}_{22}^2 Var(\hat{\beta}_{32}) + \hat{\beta}_{32}^2 Var(\hat{\beta}_{22})}}$$
+
+Where $\hat{\beta}_{12} - \hat{\beta}_{33} = \hat{\beta}_{22} \hat{\beta}_{32}$
+
+Making this substitution, we can find the Z score.
+```
+sobel_Z = (bh_22*bh_32) / (sqrt((bh_22^2)*var_bh_32 + (bh_32^2)*var_bh_22))
+```
+**So $Z = 12.99453$**
+
+---
+
+#### Part (5)
+
+The p-value for the Sobel test can be found using a standard normal calculation.
+```
+sobel_pval = 2*(1-pnorm(sobel_Z))
+```
+Since the Z score is so large, **the p-value for the Sobel test is effectively zero. Thus, we emphatically reject the hypothesis of no mediation effect.**
+
+---
+
+## Problem 2
+
+---
+
+#### Part (1)
+From the Week 1 lecture notes, a result of minimizing $I(a,b) = \sum_{i=1}^{n}(y_i - a - bx_i)^2$ is $\hat{b} = \frac{\sum_{i=1}^n x_i y_i - n \bar{x} \bar{y}}{\sum_{i=1}^n x_i^2 - n \bar{x}^2}$. Normalizing the x values such that $x_i \rightarrow x_i - \bar{x}$ gives us the useful determination that $\bar{x} = 0$. Using this information, our previous formula for $\hat{b}$ can be written as $\hat{b} = \frac{\sum_{i=1}^n x_i y_i}{\sum_{i=1}^n x_i^2}$. We are given in the question prompt that $\sum_{i=1}^n x_i^2 = n$. Substituting this into our formula for $\hat{b}$ yields $\hat{b} = \frac{\sum_{i=1}^n x_i y_i}{n}$. In this model, $\hat{b} = \hat{\beta}$. **Thus, our final expression is $\hat{\beta} = \frac{\sum_{i=1}^n x_i y_i}{n}$ which is the desired expression.**
+
+---
+
+#### Part (2)
+Given that $\sum_{i=1}^n x_i^2 = n$ and using our conclusion from Part (1) that $\hat{\beta} = \frac{\sum_{i=1}^n x_i y_i}{n}$, we can find the desired expression as follows:
+$$SSE = \sum_{i=1}^n\hat{e}^2 = \sum_{i=1}^n (y_i - \hat{y_i})^2$$
+$$=\sum(y_i - \hat{\beta}x_i)^2$$
+$$=\sum(y_i^2 - 2\hat{\beta}x_iy_i + \hat{\beta}^2x_i^2)$$
+$$=\sum y_i^2 - \sum 2\hat{\beta}x_iy_i + \sum \hat{\beta}^2x_i^2$$
+$$=\sum y_i^2 - 2n\hat{\beta}^2 + n\hat{\beta}^2$$
+$$=\sum y_i^2 - n\hat{\beta}^2$$
+**Thus we have shown that $SSE = \sum_{i=1}^n\hat{e}^2 = \sum_{i=1}^n y_i^2 - n\hat{\beta}^2$.**
+
+---
+
+#### Part (3)
+If $H_0$ is true, then $\beta = 0$ and $SSE_{red}$ = $\sum y_i^2$, as every $y$ value is a residual in the reduced model. From Part (2) we found that $SSE = \sum (y_i - \hat{y})^2 = \sum y_i^2 - n\beta^2$. We also note that, in the full model, $p = 1$ since there is only one $\beta$. In the reduced model, $q = 0$ since the reduced model removes the single $\beta$ that existed in the full model.
+
+With these observations in hand, we can proceed to find the F statistic:
+$$F = \frac{SSE_{red} - SSE}{SSE / (n-1)}$$
+$$=\frac{\sum y_i^2 - \sum (y_i - \hat{y_i})^2}{\sum (y_i - \hat{y_i})^2 / (n-1)}$$
+$$=\frac{\sum y_i^2 - \sum y_i^2 + n\hat{\beta}^2}{(\sum y_i^2 - n\hat{\beta}^2) / (n-1)}$$
+$$=\frac{n\hat{\beta}^2}{(\sum y_i^2 - n\hat{\beta}^2) / (n-1)}$$
+$$=\frac{n\hat{\beta}^2(n-1)}{\sum y_i^2 - n\hat{\beta}^2}$$
+
+**Thus, our final expression for the F statistic is $F =\frac{n\hat{\beta}^2(n-1)}{\sum y_i^2 - n\hat{\beta}^2}$**
+
+---
+
+#### Part (4)
+Since $\hat{\beta}$ is an unbiased estimator of the true parameter $\beta$, we know that $E(\hat{\beta}) = \beta$. Assuming tha the null hypothesis is true, $E(\hat{\beta}) = \beta = 0$.
+
+From material covered in Week 1, and continuing with the deduction that $\bar{x} = 0$, we know that $\hat{\beta}$ is normally distributed with $Var(\hat{\beta}) = \sigma^2 \frac{1}{\sum_{i=1}^n x_i^2}$. We are given that $\sum_{i=1}^n x_i^2 = n$. So the variance of $\hat{\beta}$ is $Var(\hat{\beta}) = \sigma^2 \frac{1}{n}$.
+
+**Thus, the distribution of $\hat{\beta}$ is $\hat{\beta} \sim N(0, \frac{\sigma^2}{n})$.**
+
+---
+
+#### Part (5)
+From the Week 3 lecture materials, we observed that $T = \frac{Z}{\sqrt{\chi_{(n-p)}^2 / (n-p)}}$ where $Z = \frac{\hat{\beta}}{\sigma \sqrt{C}}$ and $\chi_{(n-p)}^2 = (n-p) \frac{\hat{\sigma^2}}{\sigma^2}$, with $C$ being the value of $(X'X)^{-1}$. Since we have only one $x$ in our example, $C = \frac{1}{\sum_{i=1}^n x_i^2} = \frac{1}{n}$.
+
+Substituting into $T$,
+$$T = \frac{Z}{\sqrt{\chi_{(n-p)}^2 / (n-p)}}$$
+$$= \frac{\hat{\beta} / (\sigma \frac{1}{\sqrt{n}})}{\sqrt{\hat{\sigma^2} / \sigma^2}}$$
+$$= \frac{\sqrt{n}\hat{\beta}}{\hat{\sigma}}$$
+
+**Thus, we have shown that $T = \frac{\sqrt{n}\hat{\beta}}{\hat{\sigma}}$**
+
+
+We saw in the Week 3 lecture materials that $\hat{\sigma^2} = \frac{\sum_{i=1}^n (y_i - \hat{y_i})^2}{n - p}$.
+
+From Part (2) of this problem, we found that $SSE = \sum_{i=1}^n (y_i - \hat{y_i})^2 = \sum y_i^2 - n\hat{\beta}^2$.
+
+From Part (3) of this problem, we found the $F$ statistic to be $F =\frac{n\hat{\beta}^2(n-1)}{\sum y_i^2 - n\hat{\beta}^2} = \frac{n\hat{\beta}^2}{\sum y_i^2 - n\hat{\beta}^2 / (n-1)}$.
+
+Substituting $\hat{\sigma^2}$ for the denominator gives us $F =\frac{n\hat{\beta}^2}{\hat{\sigma^2}}$.
+
+Taking the square root of this expression yields $\frac{\sqrt{n}\hat{\beta}}{\hat{\sigma}} = T$.
+
+**Thus we have shown that $T^2 = F$, demonstrating that they are in fact the same test.**
+
+
+
+
+
+
+
+
+
+
