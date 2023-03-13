@@ -22,22 +22,23 @@ e_hat = y - y_hat
 ttt = 0
 ttt_test = 0
 
-for(kk in 1:1000)
+for(kk in 1:100)
 {
   q = c(1:n)
   qq = sample(q,replace=TRUE)
   xx = x[qq]
   yy = y[qq]
-  sigma_sqr = (1/(n-1)) * sum(yy-exp(t*x))^2
-  yyy = exp(t*x) + sigma_sqr*rnorm(n)
+  sigma_sqr = (1/(n-1)) * sum((yy-exp(t*x))^2)
+  yyy = exp(t*x) + sqrt(sigma_sqr)*rnorm(n)
   
   ttt[1] = 1
-  for (k in 2:100)
+  for (k in 2:3000)
   {
     uu = sum(-x*yyy*exp(x*ttt[k-1])+x*exp(2*ttt[k-1]*x))
-    dd = sum(-x^2*yyy*exp(x*ttt[k-1])+2*x^2*exp(2*ttt[k-1]*x))
+    dd = sum(-x^2*yyy*exp(x*ttt[k-1]) + (2*x^2)*exp(2*ttt[k-1]*x))
     ttt[k] = ttt[k-1] - uu/dd
   }
   
-  ttt_test[kk] = ttt[100]
+  ttt_test[kk] = ttt[3000]
 }
+
