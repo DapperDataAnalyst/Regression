@@ -6,35 +6,56 @@ date: "2023-03-17"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 data = read.csv('HW7_data.csv')
 
 # Problem 1.1 & 1.2
 y = unlist(data[1])
 x = unlist(data[2])
 n = nrow(data)
-sigma_sqr = var(y)
-t = 5
 
-for (k in 2:100)
+t = 1
+
+for (k in 2:1000)
 {
-  first_deriv = sum((y-exp(t*x))*(-x*exp(t*x)))
-  second_deriv = sum(-x^2*y*exp(t*x) + 2*x^2*exp(2*t*x))
-  t = t - first_deriv/second_deriv
+  u = sum((y-exp(t*x))*(-x*exp(t*x)))
+  d = sum(-x^2*y*exp(t*x) + 2*x^2*exp(2*t*x))
+  t = t - u/d
 }
 
-y_hat = exp(t*x)
-e_hat = y - y_hat
 
+# Problem 1.3 & 1.4
+ttt = 0
+ttt_test = 0
 
-# Problem 1.3
-for(kk in 1:1000)
+for(kk in 1:100)
 {
   q = c(1:n)
   qq = sample(q,replace=TRUE)
   xx = x[qq]
   yy = y[qq]
-  yyy = exp(t+x) + sigma_sqr*rnorm(n)
+  sigma_hat = sqrt((1/(n-1)) * sum((y-exp(t*x))^2))
+  #sigma_hat = sqrt(var((yy-exp(t*x))))
+  yyy = exp(t*x) + sigma_hat*rnorm(n)
+  
+  ttt[1] = 1
+  for (k in 2:300)
+  {
+    uu = sum(-x*yyy*exp(x*ttt[k-1])+x*exp(2*ttt[k-1]*x))
+    dd = sum(-x^2*yyy*exp(x*ttt[k-1]) + (2*x^2)*exp(2*ttt[k-1]*x))
+    ttt[k] = ttt[k-1] - uu/dd
+  }
+  
+  ttt_test[kk] = ttt[300]
 }
+
+# Problem 1.5
+alpha = 0.05
+x_bar = mean(x)
+log_y_hat = ttt_test*x_bar
+crit_val = 1.96
+lower_bound = mean(log_y_hat) - crit_val*sqrt(var(log_y_hat))
+upper_bound = mean(log_y_hat) + crit_val*sqrt(var(log_y_hat))
 
 ```
 
@@ -50,6 +71,95 @@ We use the formula $\theta(t + 1) = \theta(t) - \frac{I'(\theta(t))}{I''(\theta(
 ## Problem 1.2
 Using the method described in Problem 1.1, the estimated value of $\hat{\theta} =$ `r t`
 
+
+## Problem 1.3
+We follow the same process as is outlined in the given R code from Week 7 of the lecture materials. We run a series of bootstrap simulations, in each of which we randomly sample from our given x data and compute a $\sigma^2$ value. We use this value, along with the previously-calculated $\hat{\theta}$ value from Problem 1.2 to find approximated y values, called `yyy` in the code block. We then use a process analogous to the one used in Problem 1.1 in which we divide the first derivative of the likelihood function by the second derivative in order to find an estimate of theta iteratively. Note that each of these likelihood derivatives is using the newly-found values of `yyy`. We repeat this simulation a large number of times to effectively trace out a sampling distribution of $\hat{\theta}$. We then use R software to find the variance of these values of $\hat{\theta}$.
+```
+ttt = 0
+ttt_test = 0
+
+for(kk in 1:100)
+{
+  q = c(1:n)
+  qq = sample(q,replace=TRUE)
+  xx = x[qq]
+  yy = y[qq]
+  sigma_hat = sqrt((1/(n-1)) * sum((y-exp(t*x))^2))
+  #sigma_hat = sqrt(var((yy-exp(t*x))))
+  yyy = exp(t*x) + sigma_hat*rnorm(n)
+  
+  ttt[1] = 1
+  for (k in 2:300)
+  {
+    uu = sum(-x*yyy*exp(x*ttt[k-1])+x*exp(2*ttt[k-1]*x))
+    dd = sum(-x^2*yyy*exp(x*ttt[k-1]) + (2*x^2)*exp(2*ttt[k-1]*x))
+    ttt[k] = ttt[k-1] - uu/dd
+  }
+  
+  ttt_test[kk] = ttt[300]
+}
+```
+
+## Problem 1.4
+The value of $\hat{\theta}$ we find is `r var(ttt_test)`
+
+## Problem 1.5
+The confidence interval is found as $\hat{\theta}\bar{x} \pm \sqrt(Var(\hat{\theta})) =$ [`r lower_bound`, `r upper_bound`].
+
+
+## Problem 2.1
+We are given the following:
+$y_i = m(\theta,x_i) + \sigma \epsilon_i$
+$l(\theta) = \frac{1}{2} \sum_{i=1}^n(y_i-m(\theta,x_i))^2$
+$l'(\theta) = -\sum_{i=1}^n(y_i-m(\theta,x_i))m'(\theta,x_i)$
+$l''(\theta) = -\sum_{i=1}^n[y_im''(\theta,x_i)-(m'(\theta,x_i))^2-m(\theta,x_i)m''(\theta,x_i)]$
+
+We are asked to find $El'(\theta_0)$ and $El''(\theta_0)$ in terms of $\theta_0$, which is the true value of parameter $\theta$.
+$$El'(\theta_0) = E(-\sum_{i=1}^n(y_i-m(\theta,x_i))m'(\theta,x_i))$$
+$$= -\sum_{i=1}^n(E(m(\theta_0,x_i)) + \sigma E(\epsilon_i) - E(m(\theta_0,x_i)))E(m'(\theta_0,x_i))$$
+
+We know that $\sigma E(\epsilon_i) = 0$ since $\epsilon_i$ is a standard random variable. Moreover, the coefficient of $E(m'(\theta_0,x_i))$ is $E(m(\theta_0,x_i)) - E(m(\theta_0,x_i))$, which is zero. Thus, rewriting the expression, we have $El'(\theta_0) = -\sum_{i=1}^n(0)E'(m'(\theta_0,x_i)) = 0$. **Thus we have found that $El'(\theta_0) = 0$.**
+
+We now address the question pertaining to $E(m''(\theta_0,x_i))$:
+$$E(l''(\theta_0)) = E(-\sum_{i=1}^n[y_im''(\theta,x_i)-(m'(\theta,x_i))^2-m(\theta,x_i)m''(\theta,x_i)])$$
+$$= E(-\sum_{i=1}^nm''(\theta_0,x_i)m(\theta_0,x_i) + \sigma
+\epsilon_i m''(\theta_0,x_i) - m'(\theta_0,x_i)^2 - m(\theta_0,x_i)m''(\theta_0,x_i))$$
+$$= \sum_{i=1}^n E(m'(\theta_0,x_i)^2)$$
+
+The term $m'(\theta_0,x_i)^2$ is a constant when using $\theta_0$.
+
+**Thus, $E(l''(\theta_0)) = \sum_{i=1}^n m'(\theta_0,x_i)^2$**
+
+
+## Problem 2.2
+To find the desired term, we will use the standard formula for variance $Var(l'(\theta_0)) = E(l'(\theta_0)^2) - E(l'(\theta_0))^2$. We have found already that $E(l'(\theta_0)) = 0$. This simplifies our formula for variance to $Var(l'(\theta_0)) = E(l'(\theta_0)^2)$.
+$$Var(l'(\theta_0)) = E(l'(\theta_0)^2) = E(\sum_{i=1}^n((y_i - m(\theta_0,x_i)m'(\theta_0,x_i))^2))$$
+$$= E(\sum_{i=1}^n(\sigma \epsilon_i m'(\theta_0,x_i)^2))$$
+$$= \sigma^2 \sum_{i=1}^nE(\epsilon_i^2) * E(m'(\theta_0,x_i)^2)$$
+$$= \sigma^2 \sum_{i=1}^n 1 * E(m'(\theta_0,x_i)^2)$$
+$$= \sigma^2 E(\sum_{i=1}^nm'(\theta_0,x_i)^2)$$
+$$= \sigma^2 E(l''(\theta_0))$$
+
+**Thus, we have shown that $\sigma^2 E(l''(\theta_0)) = Var(l'(\theta_0))$**
+
+## Problem 2.3
+We have already shown that, in expectation, $l(\hat{\theta}) = 0$, so we will set it to zero for this calculation. This leaves us with $l'(\theta_0) \approx (\theta_0 - \hat{\theta})l''(\theta_0)$
+
+We rearrange terms algebraically to arrive at $\hat{\theta} \approx \theta_0 - \frac{l'(\theta_0)}{l''(\theta_0)}$. **Substituting $C = l''(\theta_0)$, we arrive at the desired expression: $\hat{\theta} \approx \theta_0 - \frac{l'(\theta_0)}{C}$**
+
+## Problem 2.4
+From the lecture notes from Week 7, we know that $\hat{\theta} \sim N(\theta,\sigma_n^2)$
+
+We have already found all of the components necessary to expand the $\sigma_n^2$ term, as follows:
+$$\sigma_n^2 = \frac{Var(l'(\theta_0))}{l''(\hat{\theta}^2)}$$
+$$= \frac{\sigma^2 \sum_{i=1}^n m'(\theta_0,x_i)^2}{[-\sum_{i=1}^n[y_im''(\hat{\theta},x_i)-(m'(\hat{\theta},x_i))^2-m(\hat{\theta},x_i)m''(\hat{\theta},x_i)]]^2)}$$
+
+**So then, $\hat{\theta} \sim N(\theta_0, \frac{\sigma^2 \sum_{i=1}^n m'(\theta_0,x_i)^2}{[-\sum_{i=1}^n[y_im''(\hat{\theta},x_i)-(m'(\hat{\theta},x_i))^2-m(\hat{\theta},x_i)m''(\hat{\theta},x_i)]]^2)}$**
+
+## Problem 2.5
+We take the square root of the variance in the previous problem to find $\sigma_n = \frac{\sigma \sum_{i=1}^n m'(\theta_0,x_i)}{-\sum_{i=1}^n[y_im''(\hat{\theta},x_i)-(m'(\hat{\theta},x_i))^2-m(\hat{\theta},x_i)m''(\hat{\theta},x_i)]}$
+
+**The approximate confidence interval is found as $\hat{\theta} \pm C_\frac{\alpha}{2} \sigma_n$**
 
 
 
