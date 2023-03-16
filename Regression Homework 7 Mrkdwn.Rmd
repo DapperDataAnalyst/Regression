@@ -109,16 +109,22 @@ The confidence interval is found as $\hat{\theta}\bar{x} \pm \sqrt(Var(\hat{\the
 
 ## Problem 2.1
 We are given the following:
+
 $y_i = m(\theta,x_i) + \sigma \epsilon_i$
+
 $l(\theta) = \frac{1}{2} \sum_{i=1}^n(y_i-m(\theta,x_i))^2$
+
 $l'(\theta) = -\sum_{i=1}^n(y_i-m(\theta,x_i))m'(\theta,x_i)$
+
 $l''(\theta) = -\sum_{i=1}^n[y_im''(\theta,x_i)-(m'(\theta,x_i))^2-m(\theta,x_i)m''(\theta,x_i)]$
 
 We are asked to find $El'(\theta_0)$ and $El''(\theta_0)$ in terms of $\theta_0$, which is the true value of parameter $\theta$.
 $$El'(\theta_0) = E(-\sum_{i=1}^n(y_i-m(\theta,x_i))m'(\theta,x_i))$$
 $$= -\sum_{i=1}^n(E(m(\theta_0,x_i)) + \sigma E(\epsilon_i) - E(m(\theta_0,x_i)))E(m'(\theta_0,x_i))$$
 
-We know that $\sigma E(\epsilon_i) = 0$ since $\epsilon_i$ is a standard random variable. Moreover, the coefficient of $E(m'(\theta_0,x_i))$ is $E(m(\theta_0,x_i)) - E(m(\theta_0,x_i))$, which is zero. Thus, rewriting the expression, we have $El'(\theta_0) = -\sum_{i=1}^n(0)E'(m'(\theta_0,x_i)) = 0$. **Thus we have found that $El'(\theta_0) = 0$.**
+We know that $\sigma E(\epsilon_i) = 0$ since $\epsilon_i$ is a standard random variable. Moreover, the coefficient of $E(m'(\theta_0,x_i))$ is $E(m(\theta_0,x_i)) - E(m(\theta_0,x_i))$, which is zero. Thus, rewriting the expression, we have $El'(\theta_0) = -\sum_{i=1}^n(0)E'(m'(\theta_0,x_i)) = 0$.
+
+**Thus we have found that $El'(\theta_0) = 0$.**
 
 We now address the question pertaining to $E(m''(\theta_0,x_i))$:
 $$E(l''(\theta_0)) = E(-\sum_{i=1}^n[y_im''(\theta,x_i)-(m'(\theta,x_i))^2-m(\theta,x_i)m''(\theta,x_i)])$$
@@ -145,7 +151,9 @@ $$= \sigma^2 E(l''(\theta_0))$$
 ## Problem 2.3
 We have already shown that, in expectation, $l(\hat{\theta}) = 0$, so we will set it to zero for this calculation. This leaves us with $l'(\theta_0) \approx (\theta_0 - \hat{\theta})l''(\theta_0)$
 
-We rearrange terms algebraically to arrive at $\hat{\theta} \approx \theta_0 - \frac{l'(\theta_0)}{l''(\theta_0)}$. **Substituting $C = l''(\theta_0)$, we arrive at the desired expression: $\hat{\theta} \approx \theta_0 - \frac{l'(\theta_0)}{C}$**
+We rearrange terms algebraically to arrive at $\hat{\theta} \approx \theta_0 - \frac{l'(\theta_0)}{l''(\theta_0)}$. 
+
+**Substituting $C = l''(\theta_0)$, we arrive at the desired expression: $\hat{\theta} \approx \theta_0 - \frac{l'(\theta_0)}{C}$**
 
 ## Problem 2.4
 From the lecture notes from Week 7, we know that $\hat{\theta} \sim N(\theta,\sigma_n^2)$
