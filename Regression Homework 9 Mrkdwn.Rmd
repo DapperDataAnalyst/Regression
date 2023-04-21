@@ -1,0 +1,92 @@
+---
+title: "Regression Homework 9"
+output: html_document
+date: "2023-03-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1.1
+We observed in the slides from Week 9 that the log likelihood function for a Bernoulli regression model is of the following form:
+$$L(\beta) = \sum_{i=1}^n [x_i y_i \beta - log(1 + e^{x_i\beta})]$$
+
+## Problem 1.2
+$$\frac{dL}{d\beta} = \sum_{i=1}^n [x_i y_i - \frac{x_i e^{x_i\beta}}{1 + e^{x_i\beta}}]$$
+$$\frac{d^2L}{d\beta^2} = \sum_{i=1}^n -\frac{x_i[x_i e^{x_i\beta} (1 + e^{x_i\beta}) - e^{x_i\beta}(x_i e^{x_i\beta})]}{(1 + e^{x_i\beta})^2}$$
+$$= \sum_{i=1}^n -\frac{x_i^2 e^{x_i\beta}}{(1 + e^{x_i\beta})^2}$$
+
+## Problem 1.3
+At each iteration, the Newton-Raphson algorithm is written as:
+$$\beta^{(t+1)} = \beta^{(t)} - \frac{L'(\beta^{(t)})}{L''(\beta^{(t)})}$$
+We have already found $L'(\beta)$ and $L''(\beta)$ in Problem 1.2. Substituting those expressions into the formula immediately above yields:
+$$\beta^{(t+1)} = \beta^{(t)} - \frac{\sum_{i=1}^n [x_i y_i - \frac{x_i e^{x_i\beta}}{1 + e^{x_i\beta}}]}{\sum_{i=1}^n [-\frac{x_i^2 e^{x_i\beta}}{(1 + e^{x_i\beta})^2}]}$$
+
+We then substitute $\beta^{(t+1)}$ in place of $\beta^{(t)}$ and repeat this process. We continue this iterative process until the $\beta$ values converge, yielding the MLE estimator $\hat{\beta}$.
+
+## Problem 1.4
+We are given that $P(y_i = 1) = p_i = \frac{e^{x_i\beta}}{1 + e^{x_i\beta}}$. Thus $E(y) = 1(p_i) + 0(1-p_i) = \frac{e^{x_i\beta}}{1 + e^{x_i\beta}}$.
+
+We found in Homework 7 that we can write $\hat{\beta} = \beta_0 - \frac{L'(\beta_0)}{L''(\hat{\beta})}$.
+
+Taking the expectation yields $E(\hat{\beta}) = E(\beta_0) - \frac{E(L'(\beta_0))}{L''(\hat{\beta})}$.
+
+We found in Problem 1.2 that $\frac{dL}{d\beta} = L'(\beta) =  \sum_{i=1}^n x_i(y_i - \frac{e^{x_i\beta}}{1 + e^{x_i\beta}})$.
+
+Taking the expectation yields $E(L'(\beta)) =  \sum_{i=1}^n x_i(E(y_i) - \frac{e^{x_i\beta}}{1 + e^{x_i\beta}}) = \sum_{i=1}^n x_i(\frac{e^{x_i\beta}}{1 + e^{x_i\beta}} - \frac{e^{x_i\beta}}{1 + e^{x_i\beta}}) = 0$.
+
+**Substituting this back into the expression for $E(\hat{\beta})$ gives us $E(\hat{\beta}) = E(\beta_0) - \frac{0}{L''(\hat{\beta})} = \beta$**
+
+We find $Var(\hat{\beta})$ as follows:
+$$Var(\hat{\beta}) = Var(\frac{L'(\beta)}{L''(\hat{\beta)}})$$
+$$= \frac{Var(L'(\beta))}{(L''(\hat{\beta}))^2}$$
+$$= \frac{Var(\sum_{i=1}^n (y_i - \frac{e^{x_i\beta}}{1 + e^{x_i\beta}})x_i)}{(L''(\hat{\beta}))^2}$$
+$$= \frac{\sum_{i=1}^n x_i^2 Var(y_i)}{(\sum_{i=1}^nx_i^2(1-\hat{p_i})\hat{p_i})^2}$$
+$$= \frac{\sum_{i=1}^n x_i^2 \hat{p_i}(1-\hat{p_i})}{(\sum_{i=1}^nx_i^2 \hat{p_i} (1-\hat{p_i}))^2}$$
+$$= \frac{1}{\sum_{i=1}^nx_i^2 \hat{p_i} (1-\hat{p_i})}$$
+
+## Problem 1.5
+$\hat{\beta} \sim N(\beta, \frac{1}{X'WX})$ where W is a diagonal matrix with $W_{ii} = \mu_i(1-\mu_i)$.
+
+## Problem 2.1
+The posterior is the likelihood times the prior, which is as follows:
+$$f(\beta|X) \propto \prod_{i=1}^n p_i^{y_i}(1-p_i)^{1-y_i}*e^{-\frac{\beta^2}{2\sigma^2}}$$
+
+## Problem 2.2
+A function is concave if its second derivative is negative across all x. Taking the log of the posterior yields the following:
+$$log(\prod_{i=1}^n p_i^{y_i}(1-p_i)^{1-y_i}*e^{-\frac{\beta^2}{2\sigma^2}})$$
+$$= \sum_{i=1}^n log(p_i^{y_i}(1-p_i)^{1-y_i}) + \sum_{i=1}^n log(e^{-\frac{\beta^2}{2\sigma^2}})$$
+$$= \sum_{i=1}^n log(p_i^{y_i}(1-p_i)^{1-y_i}) + \sum_{i=1}^n -\frac{\beta^2}{2\sigma^2}$$
+
+The term $\sum_{i=1}^n -\frac{\beta^2}{2\sigma^2}$ will be dropped upon taking the derivative. Thus we are in truth finding the second derivative of the log likelihood function, which was found in Problem 1, and is repeated here:
+$$\frac{d^2L}{d\beta^2} = \sum_{i=1}^n -\frac{x_i^2 e^{x_i\beta}}{(1 + e^{x_i\beta})^2}$$
+
+Looking at this expression, we see that both the numerator and denominator will be poistive for any value of x. When multiplied by the leading negative sign, then, this second derivative will always be negative.
+
+## Problem 2.3
+If the prior is improper, the posterior is proportional to the likelihood function. We do not gain any information over our prior knowledge.
+
+## Problem 2.4
+The Bayes factor, $B$, is the likelihood with $\beta = 1$ divided by the likelihood with $\beta = 0$. Talking the log converts this ratio to a difference by properties of logarithms. We use this difference to find the desired expression:
+$$log(B) = \sum_{i=1}^n[y_i x_i \beta - log(1+e^{x_i \beta})]|_{
+\beta=1} - \sum_{i=1}^n[ y_i x_i \beta - log(1+e^{x_i \beta})]|_{
+\beta=0}$$
+
+$$= \sum_{i=1}^n y_i x_i - log(1+e^{x_i}) - log(2)$$
+$$= \sum_{i=1}^n y_i x_i - log(\frac{1 + e^{x_i}}{2})$$
+
+## Problem 2.5
+Under the null hypothesis, $E(y_i) = \frac{1}{2}$ and $Var(y_i) = \frac{1}{4}$.
+
+$$E(log(B)) = E(\sum y_i x_i - log(\frac{1 + e^{x_i}}{2})) = \sum E(y_i) x_i - log(\frac{1 + e^{x_i}}{2}) = \sum \frac{x_i}{2} - log(\frac{1 + e^{x_i}}{2})$$
+
+$$Var(log(B)) = Var(\sum y_i x_i - log(\frac{1 + e^{x_i}}{2})) = \sum Var(y_i x_i - log(\frac{1 + e^{x_i}}{2}) = \sum Var(y_i) x_i^2 = \sum \frac{x_i^2}{4}$$
+
+Thus we have $log(B) \sim N(\sum \frac{x_i}{2} - log(\frac{1 + e^{x_i}}{2}), \sum \frac{x_i^2}{4})$
+
+
+
+
+
+

@@ -1,0 +1,249 @@
+---
+title: "Regression Homework 11"
+output: html_document
+date: "2023-04-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Problem 1
+A data set $(x_i, y_i)$, for $i = 1,...,100,$ is available in "HW11_data1.csv" for the logistic regression model; 
+$$P(Y_i = j | \beta, x_i) = \frac{e^{x_i\beta_j}}{1+\sum_{j=1}^3\space e^{x_i\beta_j}}, \space\space j = 1,2,3,...$$ 
+and
+
+$$P(Y_i = 4 | \beta, x_i) = \frac{e^{1}}{1+\sum_{j=1}^3\space e^{x_i\beta_j}}$$
+
+
+#### Problem 1.1
+From Week 11 Slide 5, we have the following expression for our likelihood function:
+$$I(\beta) = \prod_{i=1}^np(y_i\space|\space x) = \frac{\text{exp}\sum_{j=1}^{K-1}\beta_j\sum_{y_i=j}x_i}{\prod_{i=1}^n(1+\sum_{j=1}^{K-1}\text{exp}(x_i\beta_j))}$$
+The log likelihood of the prior expression is the following:
+
+$$L(\beta) = \sum_{j=1}^{K-1}\beta_j\sum_{y_i=j}x_i-\sum_{i=1}^nlog(1+\sum_{j=1}^{K-1}\text{exp}(x_i\beta_j))$$
+<br/><br/>
+
+#### Problem 1.2
+Referencing Week 11 Slide 7, 
+$$\displaystyle \frac{\partial L}{\partial \beta_j} = \sum_{y_i = j}x_j - \sum_{i=1}^n\frac{x_i\text{exp}(x_i\beta_j)}{(1+\sum_{j=1}^{K-1}\text{exp}(x_i\beta_j))}$$
+$$\displaystyle \frac{\partial^2 L}{\partial \beta_j \partial \beta_k} = -\mathbf{1}(j = k)\sum_{i=1}^n\frac{x_i^2\text{exp}(x_i\beta_j)}{(1+\sum_{j=1}^{K-1}\text{exp}(x_i\beta_j))} + \sum_{i=1}^n\frac{x_i^2\text{exp}(x_i(\beta_j+\beta_k))}{(1+\sum_{j=1}^{K-1}\text{exp}(x_i\beta_j))^2}$$
+<br/><br/>
+
+#### Problem 1.3
+A Newton-Raphson algorithm of 1000 iterations were run using the first and second derivatives of the log-likelihood function. We set out initial beta values to be (0.1,0.1,0.1). Our $L'(\beta)$ is a 3x1 vector while our $L''(\beta)$ is a 3x3 matrix. When calculating our $\hat{\beta}$ values we took the inverse of our $L''(\beta)$ matrix to multiply it to our $L'(\beta)$ vector.
+``` {r}
+data = read.csv('HW11_data1.csv')
+n <- 100
+y <- as.matrix(subset(data, select = c(y)))
+x <- as.matrix(subset(data, select = c(x)))
+
+k <- 4
+l <- 0
+# 3by3 matrix in this case for our 2nd derivative of the likelihood function
+ll <- matrix(nrow=(k-1), ncol=(k-1))
+b<-0
+bb<-0
+
+# initialize beta values
+b <- c(0.1,0.1,0.1)
+
+# initialize final beta hat matrix
+for(j in 1:(k-1))
+{
+bb[j]<-b[j]
+}
+
+# perform Newton-Raphson algorithm for 1000 iterations 
+for(t in 1:1000)
+{
+# d stands for denominator for summation term 
+d<-0
+for(i in 1:n)
+{
+	d[i]<-1+sum(exp(bb*x[i]))
+}
+
+for(j in 1:(k-1))
+{
+  # term for first derivative of likelihood function
+	l[j]<-sum(x*ifelse(y==j,1,0))-sum(x*exp(bb[j]*x)/d)
+	for(jj in 1:(k-1))
+	{
+	# term for 2nd derivative of likelihood function
+	ll[j,jj]<- -ifelse(j==jj,1,0)*sum(x^2*exp(bb[j]*x)/d)+sum(x^2*exp((bb[jj]+bb[j])*x)/d^2)
+	}
+}
+
+bb<-bb-solve(ll)%*%l
+}
+bb
+
+```
+ **Our maximum likelihood estimators are: $\hat{\beta} = (−0.7201165,0.8876778,−0.1058766)$**
+<br/><br/>
+
+#### Problem 1.4
+Using the P formulas shown in the beginning of problem 1 we replaced x with 1 and $\beta_j$ with our 1.3 $\hat{\beta}$ values.  **The predictive probabilities for a new Y are: (0.1010641 0.5044905 0.1867918 0.2076536)**. 
+
+The following is the code used:
+```{r 1.2, include = TRUE}
+p <- 0
+for(i in 1:n)
+{
+p[k]<-1/(1+sum(exp(1*bb)))
+for(j in 1:(k-1))
+{
+	p[j]<-exp(1*bb[j])*p[k]
+}
+}
+p
+```
+<br/><br/>
+
+#### Problem 1.5
+
+From the values in 1.4 we see that when x > 0 the largest probability is p(2) with a value of (0.5044905) which corresponds to the value of Y equaling 2. **Thus the predicted outcome for Y is 2**
+<br/><br/>
+
+## Problem 2
+
+
+#### Problem 2.1
+
+Given that $f_0 = \theta exp(-\theta)$,  we can evaluate the survival function $S_0(t)$ as follows:
+$$S_0 (t) = \int_t^\infty f_0(s)ds$$
+$$= 1-\int_0^t f_0(s)ds$$
+$$= 1 -\int_0^t \theta exp(-s\theta)ds$$
+$$= 1 + \theta \frac{exp(-s\theta)}{\theta}|_0^t$$
+$$= 1 + (exp(-t\theta) - 1)$$
+$$exp(-t\theta)$$
+*Therefore the baseline hazard function $h_0(t)$ is given as:*
+$$h_0(t) = \frac{f_0(t)}{S_0(t)} = \frac{\theta exp(-t\theta)}{exp(-t \theta)} = \theta$$
+
+#### Problem 2.2
+Using the hazard function derived in 2.1, we have:
+$$h(t|x) = h_0(t)exp(x\beta) = \theta exp(x\beta)$$
+Since we are no longer considering the baseline case, we can extend the idea that $h(t|x)$ is the rate. Therefore, we get the following:
+$$f(t|x,\theta,\beta) = h(t|x)S(t)$$
+$$= \theta exp(x\beta) \int_t^\infty f(s)ds$$
+$$= \theta exp(x\beta)exp(-t\theta)$$
+$$= \theta exp(x\beta - t\theta)$$
+
+#### Problem 2.3
+
+The overall (partial) likelihood function is given as
+$$I(\beta) = \prod_{i=1}^n \frac{f(t|x_i,\theta,\beta)}{\sum_{j \geq i}f(t|x_i,\theta,\beta)} = \frac{e^{x_i\beta}}{\sum_{j \geq i} x_i \beta}$$
+where the $x_i$ are sorted based on the time $t_i$, and the partial likelihood function is independent of $\theta$. Therefore, the corresponding log likelihood is given as
+$$l(\beta) = \sum_{i=1}^n x_i \beta - \sum_{i=1}^n log(\sum_{j \geq i} e^{x_j\beta})$$
+
+#### Problem 2.4
+
+Differentiating the log likelihood obtained in 2.3 yields
+$$\frac{dl(\beta)}{d\beta} = \sum_{i=1}^n x_i- \sum_{i = 1}^n (\frac{\sum_{j \geq i} x_j e ^{x_j\beta}}{\sum_{j \geq i}e^{x_j\beta}})$$
+Taking the second derivative of the log likelihood yields
+$$\frac{d^2l(\beta)}{d\beta^2} = -\sum_{i=1}^n\frac{d}{d\beta}(\frac{1}{\sum_{j \geq i} e^{x_j\beta}}) \sum_{j \geq i}x_j e^{x_j\beta} + \frac{d}{d\beta}(\sum_{j \geq i} x_j e^{x_j\beta})\frac{1}{\sum_{j \geq i}e^{x_j\beta}}$$
+$$=- \sum_{i=1}^n - \frac{1}{(\sum_{j \geq i}e^{x_j\beta})^2} \frac{d}{d\beta}(\sum_{j \geq i} e^{x_j\beta})\sum_{j \geq i}x_j e^{x_j\beta} + \frac{\sum_{j \geq i}x_j^2e^{x_j\beta}}{\sum_{j \geq i}e^{x_j\beta}}$$
+$$=- \sum_{i=1}^n - \frac{1}{(\sum_{j \geq i}e^{x_j\beta})^2}\sum_{j \geq i}x_j e^{x_j\beta} \sum_{j \geq i}x_j e^{x_j\beta} + \frac{\sum_{j \geq i}x_j^2e^{x_j\beta}}{\sum_{j \geq i}e^{x_j\beta}}$$
+$$= -\sum_{i=1}^n -\frac{(\sum_{j \geq i}x_j e^{x_j\beta})^2}{(\sum_{j \geq i} e^{x_j\beta})^2} + \frac{\sum_{j \geq i}x_j^2 e^{x_j\beta}}{\sum_{j \geq i} e^{x_j\beta}}$$
+$$= \sum_{i=1}^n \frac{(\sum_{j \geq i}x_j e^{x_j\beta})^2 - (\sum_{j \geq i}x_j^2 e^{x_j\beta})(\sum_{j \geq i} e^{x_j\beta})}{(\sum_{j \geq i} e^{x_j\beta})^2}$$
+
+Thus, from Newton-Raphson we get
+$$\hat{\beta} = \beta - \frac{\frac{dl(\beta)}{d\beta}}{\frac{d^2l(\beta)}{d\beta^2}}$$
+$$= \beta - \frac{\sum_{i=1}^n x_i- \sum_{i = 1}^n (\frac{\sum_{j \geq i} x_j e ^{x_j\beta}}{\sum_{j \geq i}e^{x_j\beta}})}{\sum_{i=1}^n \frac{(\sum_{j \geq i}x_j e^{x_j\beta})^2 - (\sum_{j \geq i}x_j^2 e^{x_j\beta})(\sum_{j \geq i} e^{x_j\beta})}{(\sum_{j \geq i} e^{x_j\beta})^2}}$$
+
+We implement this in R as follows:
+```{r include=TRUE}
+data <- read.csv ('HW11_data2.csv')
+x <- data[,2]
+t <- data[,1]
+indx <- order(t)
+t_sort <- t[indx]
+x_sort <- x[indx]
+beta <- 0
+first_derivative <- function(x, beta) {
+  x_sum = sum(x)
+  grad <- 0
+  n <- length (x)
+  for (i in 1:n) {
+    grad <- grad + sum(x[i:n]*exp(x[i:n]*beta))/sum(exp (x[i:n]*beta))
+  }
+  grad <- x_sum - grad
+  return (grad)
+}
+second_derivative <- function (x, beta) {
+  x_sum = sum(x)
+  grad2 <- 0
+  n <- length(x)
+  term1 <- 0
+  term2 <- 0
+  for (i in 1:n) {
+    denom <- 1/(sum(exp(x[i:n]*beta))^2)
+    term1 <- term1 + sum(x[i:n]^2*exp(x[i:n]*beta))*sum (exp(x[i:n]*beta))*denom 
+    term2 <- term2 + (sum(x[i:n]*exp(x[i:n]*beta)))^2*denom
+  }
+    grad2 <- -term1 + term2
+    return (grad2)
+}
+newton_raphson <- function (x, beta, itermax=1000, verbose=TRUE) {
+  for (iter in 1:itermax) {
+    beta_old <- beta
+    grad <- first_derivative(x, beta)
+    grad2 <- second_derivative(x, beta)
+    beta <- beta - grad/grad2
+    if (verbose==TRUE) {
+      print(abs(beta - beta_old))
+    }
+  }
+
+return(beta)
+}
+
+
+beta <- newton_raphson(x_sort, beta, 100, verbose=FALSE)
+beta
+
+```
+
+*Thus our estimate $\hat{\beta} = `r beta`$*
+
+#### Problem 2.5
+```{r set_B, include=FALSE}
+B = 1000
+```
+
+Using $\hat{\beta} = `r beta`$ as obtained in 2.4, we sample with replacement from the exponential distribution $f(t|x,\theta,\beta) = \theta e^{(x\beta - t\theta)}$ to obtain new values for t. We then reevaluate $\beta$ using Newton Raphson. We repeat this procedure for `r B` iterations. Lastly, from the distribution of the found $\hat{\beta}$ values, we obtain the variance of $\hat{\beta}$ and the normal approximation $\hat{\beta} \sim N(\beta, \sigma_\beta^2)$
+
+The implementation is as follows:
+
+```{r include=TRUE}
+parametric_bootstrap <- function(x, beta, B){
+  beta_hat <- beta
+  beta_bootstrap <- replicate(B,0)
+  n <- length(x)
+  for (i in 1:B){
+    tt <- replicate(n,0)
+    for (j in 1:n){
+      tt[j] <- rexp(1,exp(beta*x[j]))
+    }
+    indx <- order(tt)
+    xx_sort <- x[indx]
+    beta_bootstrap[i] <- newton_raphson(xx_sort, beta=0, itermax=1000, verbose=FALSE)
+  }
+  return(beta_bootstrap)
+}
+
+beta_bs <- parametric_bootstrap(x,beta,B)
+var_bs <- var(beta_bs)
+var_bs
+
+mean_bs <- mean(beta_bs)
+mean_bs
+
+```
+*Thus we obtain a variance for $\hat{\beta} =$  `r var_bs` and $\hat{\beta}$ has the distribution*
+$$\hat{\beta} \sim N(`r mean_bs`, `r var_bs`)$$
+
+
+

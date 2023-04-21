@@ -1,0 +1,260 @@
+---
+title: "Regression Homework 10 Mrkdwn"
+output: html_document
+date: "2023-04-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+data = read.csv('HW10_data.csv')
+y = data[,1]
+x = data[,2]
+```
+
+
+## Problem 1.1
+We define the following function to find $\hat{m}(0)$ as follows:
+```{r include = TRUE}
+# Define the Nadaraya-Watson estimator function with a Uniform Kernel
+estimator_m_hat <- function(x, y, theta, h) {
+  
+  # x = independent variable in dataset
+  # y = dependent variable in dataset
+  # theta = given value = 0, value of kernal function m(x)
+  # h = given value = 0.5, smoothing parameter
+  
+  kernel_value <- numeric(length(x)) # variable to hold kernel for loop
+  
+  # loop through x values to assign kernal value based on specified weights
+  for (i in 1:length(x)){
+    if (abs(x[i] - theta) < h)
+      kernel_value[i] <- 0.5
+    else
+      kernel_value[i] <- 0
+  }
+  
+  # weight values defined as the kernel_value / sum of uniform kernal values
+  weight = kernel_value / sum(kernel_value)
+  
+  # Using Week 10 Slide 4, find m(x) by multiplying weight to each y_i and taking the sum
+  m_hat <- sum(y * weight)
+  return(m_hat)
+  
+}
+
+```
+**Thus we find $\hat{m}(0)$ as 0.007849275**
+
+
+## Problem 1.2
+Using a Taylor expansion of $m(x_i)$ about x:
+$$m(x_i) = m(x) + (x_i - x)m'(x) + \frac{1}{2}(x_i - x)^2 m''(x) + o(h^2)$$
+
+From this we can obtain:
+$$Bias = E\hat{m}(x) - m(x) = m'(x)\frac{\sum_{|x-x_i|<h}(x_i - x)}{\sum_{|x-x_i|<h}1} + \frac{1}{2}m''(x)\frac{\sum_{|x-x_i|<h}(x_i-x)^2}{\sum_{|x-x_i|<h}1} + o(h^2)$$
+
+We are given that $m(x)$ is linear with slope 1. This means that the second and third terms on the right hand side of the equation above are zero, as the second and all higher derivatives of a linear expression with constant slope are zero.
+
+This leaves us with the expression...
+$$Bias = E\hat{m}(x) - m(x) = 1\frac{\sum_{|x-x_i|<h}(x_i - x)}{\sum_{|x-x_i|<h}1} = 0$$
+
+## Problem 1.3
+From Week 10 lecture materials:
+$$Var(\hat{m}(0)) = \sigma^2\sum_{i=1}^nw_{i,h}^2(x)$$
+Using a modified form of the function used is Problem 1.1, we find the sum of the squared weights as follows:
+```{r include = TRUE}
+# Define the Nadaraya-Watson estimator function with a Uniform Kernel
+estimator_m_hat2 <- function(x, y, theta, h) {
+  
+  # x = independent variable in dataset
+  # y = dependent variable in dataset
+  # theta = given value = 0, value of kernal function m(x)
+  # h = given value = 0.5, smoothing parameter
+  
+  kernel_value <- numeric(length(x)) # variable to hold kernel for loop
+  
+  # loop through x values to assign kernal value based on specified weights
+  for (i in 1:length(x)){
+    if (abs(x[i] - theta) < h)
+      kernel_value[i] <- 0.5
+    else
+      kernel_value[i] <- 0
+  }
+  
+  # Week 10 Slide 14
+  # weight values defined as the kernel_value / sum of uniform kernal values
+  weight = kernel_value^2 / (sum(kernel_value))^2
+  # return sum of the weights squared
+  return(sum(weight))
+  
+}
+```
+**Thus we find $Var(\hat{m}(0))$ as $0.0667\sigma^2$**
+
+## Problem 1.4
+For each value in x, we find neighbors within the given threshold $h = 0.5$. Then we find $\hat{m}(x)$ for each $x_i$ using the formula given in the lecture notes:
+$$\hat{m}(x) = \frac{\sum_{i=1}^n y_iK((x-x_i)/h)}{\sum_{i=1}^n K((x - x_i)/h)}$$
+
+We are given the formula for $\hat{\sigma^2}$ as $$\hat{\sigma^2} = \frac{1}{n-1} \sum_{i=1}^n (y_i-\hat{m}(x_i))^2$$
+
+We plug the found values of $\hat{m}(x)$ into this expression to find
+$\hat{\sigma^2}$
+
+```{r include = TRUE}
+estimate_sigma_squared <- function(x,y,h){
+  # variable to hold output of for loop below
+  m_hats <- numeric(length(x))
+  
+  # loop through every x to find neighbors below threshold h
+  # compute m_hat for each x_i using Week 10 Slide 9 formula
+  for (i in 1:length(x)){
+    difference_in_x = abs(x-x[i])
+    x_neighbors <- ifelse(difference_in_x < h, 1,0)
+    m_hats[i] = sum(y * x_neighbors) / sum(x_neighbors)
+  }
+  
+  # using formula from 1.4, find sigma squared
+  sigma_squared = sum((y-m_hats)^2) / (length(x)-1)
+  return(sigma_squared)
+}
+```
+
+**We find $\hat{\sigma^2} = 0.04202859$**
+
+## Problem 1.5
+We find the confidence interval as $\hat{m}(0) \pm 1.96*\sqrt{Var(\hat{m}(0))}$
+
+We have already found $\hat{m}(x)$ in Problem 1.1 as $\hat{m}(0) = 0.007849275$
+
+We found $Var(\hat{m}(0))$ in Problem 1.3 as $Var(\hat{m}(0)) = 0.0667\sigma^2$ where $\sigma^2$ was estimated in Problem 1.4 as $\hat{\sigma^2} = 0.04202859$
+
+Thus $Var(\hat{m}(0)) = 0.0667\hat{\sigma^2} = 0.0667*0.04202859 = 0.0028$
+
+Thus the confidence interval is found as:
+$$\hat{m}(0) \pm 1.96*\sqrt{Var(\hat{m}(0))}$$
+$$= 0.007849275 \pm  1.96*\sqrt{0.0028}$$
+$$[-0.09589947, 0.111598]$$
+
+## Problem 2.1
+We will first sort the ordered pairs $(x_i, y_i)$ by values of $x$. Then, for all pairs $(x_i, x_{i+1})$ for $(i= 1,...,n-1)$ let $mp_i$ be the midpoint of the two $x$ values. We then let $m_1$ be the mean of all $x_j < mp_i$ and $m_2$ be the mean of all $x_j > mp_i$. We then find the sum of squares for each $mp_i$. Last, we find the index with the smallest sum of squares and use this to obtain $r, m_1, m_2$.
+
+```{r include = TRUE}
+# Sort
+x.sorted = x[order(x)]
+y.sorted = y[order(y)]
+
+mp = 0
+m1 = 0
+m2 = 0
+ss = 0
+n = length(x)
+
+# Obtain midpoints
+for (i in 1:(n-1)){
+  mp[i] = x.sorted[i] + (x.sorted[i+1] - x.sorted[i])/2
+  
+  # Subdivide data and calculate means
+  x.low = x.sorted[1:i]
+  y.low = y.sorted[1:i]
+  x.high = x.sorted[(i+1):length(x.sorted)]
+  y.high = y.sorted[(i+1):length(x.sorted)]
+  m1[i] = mean(y.low)
+  m2[i] = mean(y.high)
+  m1p = mean(y.low)
+  m2p = mean(y.high)
+  
+  # Calculate sum of squares
+  sslow = sum((m1p - y.low)^2)
+  sshigh = sum((m2p - y.high)^2)
+  ss[i] = sslow + sshigh
+}
+
+ss.sorted = ss[order(ss)]
+mp.sorted = mp[order(ss)]
+m1.sorted = m1[order(ss)]
+m2.sorted = m2[order(ss)]
+
+```
+
+## Problem 2.2
+The results we obtain from Problem 2.1 are as follows:
+$$r = -0.0669533$$
+$$m_1 = -0.717591$$
+$$m_2 = 0.6636164$$
+
+$$sum squares = 10.7916307$$
+
+## Problem 2.3
+Since $x = 0.5 > r$, then $y = m_2 = 0.6636164$
+
+## Problem 2.4
+We will sample from (x, y) with replacement and perform the procedure in Problem 2.1 for 10000 iterations. In each iteration, we record mb[j]. If the r in each iteration is less than 0.5, we set mb[j] = $m_1$. Otherwise, we set mb[j] = $m_2$.
+
+```{r include = TRUE}
+B = 10000
+mb = numeric(B)
+vv = numeric(B)
+mbest = numeric(B)
+
+for (j in 1:B){
+  # Sample with replacement
+  v = sample(1:n, n, replace = TRUE)
+  xb = x[v]
+  yb = y[v]
+  
+  # Sort samples
+  xb.sorted = xb[order(xb)]
+  yb.sorted = yb[order(xb)]
+  
+  mpb = numeric(n - 1)
+  m1b = numeric(n - 1)
+  m2b = numeric(n - 1)
+  ssb = numeric(n - 1)
+  
+  # Find regression tree splits
+  for (i in 1:(n-1)){
+    mpb[i] = xb.sorted[i] + (xb.sorted[i+1] - xb.sorted[i])/2
+    xb.low = xb.sorted[1:i]
+    yb.low = yb.sorted[1:i]
+    xb.high = xb.sorted[(i+1):length(xb.sorted)]
+    yb.high = yb.sorted[(i+1):length(xb.sorted)]
+    m1b[i] = mean(yb.low)
+    m2b[i] = mean(yb.high)
+    m1pb = mean(yb.low)
+    m2pb = mean(yb.high)
+    sslowb = sum((m1pb - yb.low)^2)
+    sshighb = sum((m2pb - yb.high)^2)
+    ssb[i] = sslowb + sshighb
+  }
+  # Sort
+  ssb.sorted = ssb[order(ssb)]
+  mpb.sorted = mpb[order(ssb)]
+  m1b.sorted = m1b[order(ssb)]
+  m2b.sorted = m2b[order(ssb)]
+  
+  # Find predicted values for each split
+  mbtemp = ifelse(mpb.sorted[1] < 0.5, m1b.sorted[1], m2b.sorted[1])
+  
+  # Compute the residual variance for the sample
+  residuals = yb - mbtemp
+  vv[j] = 1/(n-1)*sum((yb - mbtemp)^2)
+  mbest[j] = mbtemp
+}
+
+mp.var = var(mbest)
+```
+
+The boostrap yields the result:
+$$Var(\hat{m}(0.5)) = 0.0026319$$
+
+## Problem 2.5
+The confidence interval is found as:
+$$\hat{m}(0.5) \pm 1.96 \sqrt{Var(\hat{m}(0.5))}$$
+$$= [0.5630634, 0.7641693]$$
+
+
+
+
+
+
